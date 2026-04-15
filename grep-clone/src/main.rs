@@ -20,22 +20,6 @@ impl Config {
     }
 }
 
-fn run(config: &Config) -> Result<(), Box<dyn Error>> {
-    let file = read_to_string(&config.file_path)?;
-
-    let content = file.lines();
-
-    let query = &config.query.to_lowercase();
-
-    for line in content {
-        if line.to_lowercase().contains(query) {
-            println!("Contained in: {}", line);
-        }
-    }
-
-    Ok(())
-}
-
 fn search<'a>(content: &'a str, query: &str) -> Vec<&'a str> {
     let lines = content.lines();
     let query = &query.to_lowercase();
@@ -44,6 +28,18 @@ fn search<'a>(content: &'a str, query: &str) -> Vec<&'a str> {
         .collect();
 
     contains_query
+}
+
+fn run(config: &Config) -> Result<(), Box<dyn Error>> {
+    let file = read_to_string(&config.file_path)?;
+
+    let lines_with_query = search(&file, &config.query);
+
+    for line in lines_with_query {
+        println!("Contained in: {}", line);
+    }
+
+    Ok(())
 }
 
 fn main() {
