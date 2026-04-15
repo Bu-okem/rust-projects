@@ -36,6 +36,16 @@ fn run(config: &Config) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn search<'a>(content: &'a str, query: &str) -> Vec<&'a str> {
+    let lines = content.lines();
+    let query = &query.to_lowercase();
+    let contains_query = lines
+        .filter(|line| line.to_lowercase().contains(query))
+        .collect();
+
+    contains_query
+}
+
 fn main() {
     let args: Vec<String> = args().collect();
 
@@ -47,5 +57,29 @@ fn main() {
     if let Err(e) = run(&config) {
         eprintln!("Application error: {}", e);
         exit(1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn one_result() {
+        let query = "duct";
+        let content = "\
+Rust:
+safe, fast, productive.
+Pick three.";
+
+        assert_eq!(vec!["safe, fast, productive."], search(content, query));
+    }
+
+    #[test]
+    fn case_insensitive() {
+        let query = "rUsT";
+        let content = "Rust:\nsafe, fast, productive.";
+
+        assert_eq!(vec!["Rust:"], search(content, query));
     }
 }
