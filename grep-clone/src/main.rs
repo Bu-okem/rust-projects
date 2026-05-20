@@ -1,21 +1,22 @@
 use std::env::args;
 use std::error::Error;
-use std::fs::read_to_string;
+use std::fs::{read_dir, read_to_string};
+use std::path::Path;
 use std::process::exit;
 
 struct Config {
     query: String,
-    file_path: String,
+    directory_path: String,
 }
 
 impl Config {
     fn new(args: &[String]) -> Result<Self, &'static str> {
         if args.len() < 3 {
-            eprintln!("Problem parsing arguments: not enough arguments");
+            return Err("Not enough arguments");
         }
         Ok(Config {
             query: args[1].clone(),
-            file_path: args[2].clone(),
+            directory_path: args[2].clone(),
         })
     }
 }
@@ -30,14 +31,32 @@ fn search<'a>(content: &'a str, query: &str) -> Vec<&'a str> {
     contains_query
 }
 
-fn run(config: &Config) -> Result<(), Box<dyn Error>> {
-    let file = read_to_string(&config.file_path)?;
-
-    let lines_with_query = search(&file, &config.query);
-
-    for line in lines_with_query {
-        println!("Contained in: {}", line);
+fn search_in_dir(path: &Path, query: &str) -> Result<(), Box<dyn Error>> {
+    for entry in read_dir(path)? {
+        let entry = entry?;
+        let folder_path = entry.path();
+        if folder_path.is_file() {
+            let file = match read_to_string(&folder_path) {
+                Ok(content) => content,
+                Err(e) => {
+                    eprintln!("Skipping [{}]: {}", folder_path.display(), e); // skip invalid UTF-8
+                    continue;
+                }
+            };
+            let lines_with_query = search(&file, query);
+            for line in lines_with_query {
+                println!("[{}]: {}", folder_path.display(), line)
+            }
+        } else {
+            search_in_dir(&folder_path, query)?;
+        }
     }
+
+    Ok(())
+}
+
+fn run(config: &Config) -> Result<(), Box<dyn Error>> {
+    search_in_dir(Path::new(&config.directory_path), &config.query)?;
 
     Ok(())
 }
