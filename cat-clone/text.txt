@@ -1,0 +1,3 @@
+This is test file for cat-clone
+When opened, the contents of this file should appear on the CLI.
+If not, something is wrong
